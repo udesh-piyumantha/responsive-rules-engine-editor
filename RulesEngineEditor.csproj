@@ -16,6 +16,10 @@
     <!-- Microsoft Rules Engine -->
     <PackageReference Include="RulesEngine" Version="6.0.0" />
     
+    <!-- OpenAPI/Swagger Support -->
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+    
     <!-- Azure Blob Storage (optional, for cloud support) -->
     <PackageReference Include="Azure.Storage.Blobs" Version="12.18.0" />
     
@@ -27,9 +31,6 @@
     <PackageReference Include="Serilog" Version="3.1.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="8.0.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="5.0.0" />
-    
-    <!-- Swagger/OpenAPI -->
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
   <!-- Directories for organization -->
