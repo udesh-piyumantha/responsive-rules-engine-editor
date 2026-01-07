@@ -127,10 +127,11 @@ app.MapControllers();
 // Health check endpoint
 app.MapHealthChecks("/health");
 
-// API endpoint listing
+// API endpoint listing (using minimal API)
 app.MapGet("/api", () => new
 {
     version = "1.0",
+    framework = ".NET 8",
     endpoints = new
     {
         workflows = "/api/rules/workflows",
@@ -138,15 +139,22 @@ app.MapGet("/api", () => new
         swagger = "/swagger",
         health = "/health"
     }
-});
+})
+.WithName("GetApiInfo")
+.WithOpenApi()
+.Produces<object>(StatusCodes.Status200OK)
+.WithDescription("Get API information and available endpoints");
 
 // Serve UI at root
-app.MapGet("/", () => Results.File("wwwroot/index.html", "text/html"));
+app.MapGet("/", () => Results.File("wwwroot/index.html", "text/html"))
+    .WithName("GetUI")
+    .WithOpenApi();
 
 // ========== LOG STARTUP INFORMATION ==========
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("========================================");
 logger.LogInformation("Rules Engine Editor API Starting");
+logger.LogInformation(".NET Version: {DotnetVersion}", System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);
 logger.LogInformation("Environment: {Environment}", app.Environment.EnvironmentName);
 logger.LogInformation("Storage Type: {StorageType}", builder.Configuration["Storage:Type"]);
 logger.LogInformation("Swagger UI: http://localhost:5000/swagger");
