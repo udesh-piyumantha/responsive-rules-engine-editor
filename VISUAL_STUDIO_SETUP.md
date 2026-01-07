@@ -3,8 +3,8 @@
 ## Opening the Project in Visual Studio
 
 ### Prerequisites
-- **Visual Studio 2022** (version 17.0 or later) or **Visual Studio Code**
-- **.NET 6 SDK** installed (download from [dotnet.microsoft.com](https://dotnet.microsoft.com))
+- **Visual Studio 2022** (version 17.4 or later) or **Visual Studio Code**
+- **.NET 8 SDK** installed (download from [dotnet.microsoft.com](https://dotnet.microsoft.com))
 - Git (for cloning the repository)
 
 ### Step 1: Clone the Repository
@@ -14,7 +14,17 @@ git clone https://github.com/udesh-piyumantha/responsive-rules-engine-editor.git
 cd responsive-rules-engine-editor
 ```
 
-### Step 2: Open in Visual Studio
+### Step 2: Verify .NET 8 Installation
+
+```bash
+dotnet --version
+# Should output: 8.x.x
+
+dotnet --list-sdks
+# Should show .NET 8.x.x in the list
+```
+
+### Step 3: Open in Visual Studio
 
 #### Option A: Open Solution File (Recommended)
 
@@ -26,7 +36,7 @@ cd responsive-rules-engine-editor
 
 Visual Studio will automatically:
 - Load the project
-- Detect the .NET SDK
+- Detect the .NET 8 SDK
 - Analyze dependencies
 - Prepare the project for building
 
@@ -111,6 +121,7 @@ dotnet build
    ```
    ========================================
    Rules Engine Editor API Starting
+   .NET Version: .NET 8.x.x
    Environment: Development
    Storage Type: JsonFile
    Swagger UI: http://localhost:5000/swagger
@@ -173,6 +184,7 @@ In Visual Studio, open the **Debug** window:
 You'll see:
 ```
 Rules Engine Editor API Starting
+.NET Version: .NET 8.x.x
 Environment: Development
 Storage Type: JsonFile
 ```
@@ -259,13 +271,13 @@ Then right-click on any request and select **Send Request**.
 
 ### Issue: "The target framework does not exist"
 
-**Solution:** Install .NET 6 SDK
+**Solution:** Install .NET 8 SDK
 
 ```bash
 # Check installed SDKs
 dotnet --list-sdks
 
-# Download .NET 6 from: https://dotnet.microsoft.com/download
+# Download .NET 8 from: https://dotnet.microsoft.com/download/dotnet/8.0
 ```
 
 ### Issue: "NuGet restore failed"
@@ -321,6 +333,7 @@ This:
 - Includes debugging symbols
 - Disables optimizations
 - Uses `appsettings.Development.json`
+- Better for local development and debugging
 
 ### Production Build
 
@@ -332,6 +345,7 @@ This:
 - Optimizes for performance
 - Removes debugging info
 - Uses `appsettings.Production.json`
+- Ready for deployment
 
 ### In Visual Studio
 
@@ -365,6 +379,32 @@ See `Dockerfile` in the repo for containerization.
 
 ---
 
+## .NET 8 Features Used
+
+### 1. **Minimal APIs**
+```csharp
+app.MapGet("/api", () => new { ... })
+    .WithName("GetApiInfo")
+    .WithOpenApi()
+    .Produces<object>(StatusCodes.Status200OK);
+```
+
+### 2. **WithOpenApi() Extension**
+Automatic OpenAPI/Swagger documentation for endpoints.
+
+### 3. **Top-level Statements**
+No `Program` class needed - cleaner syntax.
+
+### 4. **Improved Performance**
+- Faster startup time
+- Better memory usage
+- Enhanced JIT compiler optimizations
+
+### 5. **Native AOT Ready**
+Supports ahead-of-time compilation for even faster startups.
+
+---
+
 ## Performance Profiling
 
 ### CPU Profiling
@@ -389,6 +429,7 @@ See `Dockerfile` in the repo for containerization.
 - **Code Metrics** - Analyze code complexity
 - **SonarLint** - Code quality analysis
 - **GitLens** - Enhanced Git integration
+- **.NET Enhancement Pack** - .NET 8 specific features
 
 ---
 
@@ -410,21 +451,23 @@ See `Dockerfile` in the repo for containerization.
 ## Next Steps
 
 1. ✅ Clone and open project
-2. ✅ Build solution
-3. ✅ Create D:\RulesStorage\Rules directory
-4. ✅ Press F5 to run
-5. ✅ Visit http://localhost:5000/
-6. ✅ Create test workflow
-7. ✅ Read QUICK_REFERENCE.md for API details
+2. ✅ Verify .NET 8 SDK installed
+3. ✅ Build solution
+4. ✅ Create D:\RulesStorage\Rules directory
+5. ✅ Press F5 to run
+6. ✅ Visit http://localhost:5000/
+7. ✅ Create test workflow
+8. ✅ Read QUICK_REFERENCE.md for API details
 
 ---
 
 ## Support
 
 - **Visual Studio Help:** https://docs.microsoft.com/en-us/visualstudio/
-- **ASP.NET Core Docs:** https://docs.microsoft.com/en-us/aspnet/core/
+- **.NET 8 Docs:** https://learn.microsoft.com/en-us/dotnet/
+- **ASP.NET Core Docs:** https://learn.microsoft.com/en-us/aspnet/core/
 - **Project Issues:** GitHub Issues
 
 ---
 
-**Happy coding! 🚀**
+**Happy coding with .NET 8! 🚀**
