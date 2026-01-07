@@ -5,7 +5,7 @@
 ```
 responsive-rules-engine-editor/
 ├── 📄 RulesEngineEditor.sln          # Visual Studio Solution file
-├── 📄 RulesEngineEditor.csproj        # .NET 6 Project file
+├── 📄 RulesEngineEditor.csproj        # .NET 8 Project file
 ├── 📄 Program.cs                   # Application entry point
 ├── 📄 appsettings.json             # Base configuration
 ├── 📄 appsettings.Development.json  # Development environment config
@@ -46,7 +46,7 @@ responsive-rules-engine-editor/
 | File | Purpose | When to Edit |
 |------|---------|---------------|
 | `RulesEngineEditor.sln` | Visual Studio solution file | Never |
-| `RulesEngineEditor.csproj` | Project file with NuGet dependencies | When adding packages |
+| `RulesEngineEditor.csproj` | Project file with NuGet dependencies (.NET 8) | When adding packages |
 | `Program.cs` | Application startup & middleware configuration | When adding services |
 | `appsettings.json` | Base application configuration | Default storage setup |
 | `appsettings.Development.json` | Development-only settings | Local testing |
@@ -60,7 +60,7 @@ responsive-rules-engine-editor/
 | `README.md` | Project overview, features, quick start |
 | `QUICK_REFERENCE.md` | API endpoints, usage examples |
 | `PROJECT_STRUCTURE.md` | This file - folder organization |
-| `VISUAL_STUDIO_SETUP.md` | Step-by-step setup for VS |
+| `VISUAL_STUDIO_SETUP.md` | Step-by-step setup for VS with .NET 8 |
 
 ### Directory Structure
 
@@ -281,7 +281,7 @@ dotnet build --configuration Debug
 
 **Output:**
 ```
-bin/Debug/net6.0/
+bin/Debug/net8.0/
 ├── RulesEngineEditor.exe          # Executable
 ├── RulesEngineEditor.pdb          # Debug symbols
 └── appsettings*.json              # Configs
@@ -294,7 +294,7 @@ dotnet build --configuration Release
 
 **Output:**
 ```
-bin/Release/net6.0/
+bin/Release/net8.0/
 ├── RulesEngineEditor.exe          # Optimized executable
 └── appsettings*.json              # Configs
 ```
@@ -346,6 +346,13 @@ public IStorageProvider CreateProvider(string type)
 }
 ```
 
+### 5. **.NET 8 Minimal APIs** (Lightweight Endpoints)
+```csharp
+app.MapGet("/api", () => new { ... })
+    .WithName("GetApiInfo")
+    .WithOpenApi();
+```
+
 ---
 
 ## NuGet Dependencies
@@ -390,7 +397,32 @@ dotnet publish --configuration Release --output ./publish
 
 # Watch mode (auto-rebuild on file changes)
 dotnet watch run
+
+# List SDKs
+dotnet --list-sdks
 ```
+
+---
+
+## .NET 8 Highlights
+
+### Performance Improvements
+- **Faster startup time**: Up to 30% faster than .NET 6
+- **Better memory usage**: Optimized heap management
+- **JIT improvements**: Better code generation
+- **Native AOT**: Compile to native binaries
+
+### Modern Features
+- **Minimal APIs**: Lightweight endpoint definitions
+- **C# 12**: Latest language features
+- **TimeProvider abstraction**: Better testability
+- **JSON serialization improvements**: Faster serialization
+- **System.Reflection.Emit improvements**: Dynamic IL generation
+
+### LTS Support
+- **3-year support**: Long-term stability
+- **Security updates**: Regular patches
+- **Latest frameworks**: Built on modern tech stack
 
 ---
 
@@ -405,4 +437,4 @@ dotnet watch run
 
 ---
 
-**Project Complete! ✅**
+**Project Complete! ✅ (.NET 8)**
