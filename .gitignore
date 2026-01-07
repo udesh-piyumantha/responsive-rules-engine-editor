@@ -1,0 +1,85 @@
+# Visual Studio
+.vs/
+.vscode/
+*.sln.iml
+
+# Build Results
+bin/
+obj/
+Debug/
+Release/
+*.dll
+*.exe
+*.pdb
+*.lib
+*.exp
+*.res
+*.aps
+
+# User Specific Files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider IDE
+.idea/
+*.sln.iml
+*.swp
+*.swo
+*~
+
+# NuGet
+*.nupkg
+*.nuspec
+*.snupkg
+packages/
+.nuget/
+
+# Logs
+logs/
+*.log
+*.csv
+*.svclog
+
+# Application Insights
+ApplicationInsights.config
+
+# Runtime Data
+.runtime/
+
+# Local storage (RulesStorage)
+D:/RulesStorage/
+/D_RulesStorage/
+
+# Environment Files (DO NOT COMMIT SECRETS)
+.env
+.env.local
+*.local
+appsettings.Local.json
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# NPM and Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# IDE Settings
+.editorconfig.local
+
+# Temp Files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Published Apps
+Publish/
+published/
+
+# Unit Tests
+TestResults/
+.coveragerc
