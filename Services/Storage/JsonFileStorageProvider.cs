@@ -10,10 +10,6 @@ using Microsoft.Extensions.Logging;
 
 namespace RulesEngineEditor.Services.Storage
 {
-    /// <summary>
-    /// Stores workflows as JSON files on local filesystem
-    /// Compatible with: D:\RulesStorage\Rules\*.json
-    /// </summary>
     public class JsonFileStorageProvider : IStorageProvider
     {
         private readonly string _basePath;
@@ -23,17 +19,16 @@ namespace RulesEngineEditor.Services.Storage
         public JsonFileStorageProvider(IConfiguration configuration, ILogger<JsonFileStorageProvider> logger)
         {
             _logger = logger;
-            _jsonOptions = new JsonSerializerOptions 
-            { 
+            _jsonOptions = new JsonSerializerOptions
+            {
                 PropertyNameCaseInsensitive = true,
-                WriteIndented = true
+                WriteIndented = true,
+                AllowTrailingCommas = true
             };
 
-            // Get path from configuration or use default
             var storagePath = configuration["Storage:JsonFilePath"] ?? "D:\\RulesStorage";
             _basePath = Path.Combine(storagePath, "Rules");
 
-            // Ensure directory exists
             try
             {
                 Directory.CreateDirectory(_basePath);
@@ -66,16 +61,35 @@ namespace RulesEngineEditor.Services.Storage
                     try
                     {
                         var content = await File.ReadAllTextAsync(file.FullName);
-                        var workflow = JsonSerializer.Deserialize<WorkflowDefinition>(content, _jsonOptions);
 
-                        workflows.Add(new WorkflowMetadata
+                        // Try to deserialize as Inventory.API format (array of RulesEngineWorkflow)
+                        var rulesEngineWorkflows = JsonSerializer.Deserialize<RulesEngineWorkflow[]>(content, _jsonOptions);
+
+                        if (rulesEngineWorkflows != null && rulesEngineWorkflows.Length > 0)
                         {
-                            Name = workflow.Name,
-                            Description = workflow.Description,
-                            RuleCount = workflow.Rules?.Count ?? 0,
-                            CreatedAt = workflow.CreatedAt,
-                            UpdatedAt = workflow.UpdatedAt
-                        });
+                            var metadata = WorkflowConverter.ExtractMetadata(rulesEngineWorkflows, file.Name);
+                            if (metadata != null)
+                            {
+                                workflows.Add(metadata);
+                            }
+                        }
+                        else
+                        {
+                            // Fallback: try to deserialize as single WorkflowDefinition
+                            var workflow = JsonSerializer.Deserialize<WorkflowDefinition>(content, _jsonOptions);
+                            if (workflow != null)
+                            {
+                                workflows.Add(new WorkflowMetadata
+                                {
+                                    Name = workflow.Name,
+                                    Description = workflow.Description,
+                                    RuleCount = workflow.Rules?.Count ?? 0,
+                                    GlobalParamCount = workflow.GlobalParams?.Count ?? 0,
+                                    CreatedAt = workflow.CreatedAt,
+                                    UpdatedAt = workflow.UpdatedAt
+                                });
+                            }
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -104,10 +118,26 @@ namespace RulesEngineEditor.Services.Storage
                 }
 
                 var content = await File.ReadAllTextAsync(filePath);
-                var workflow = JsonSerializer.Deserialize<WorkflowDefinition>(content, _jsonOptions);
 
-                _logger.LogInformation($"Retrieved workflow: {name}");
-                return workflow;
+                // First try to deserialize as Inventory.API format
+                var rulesEngineWorkflows = JsonSerializer.Deserialize<RulesEngineWorkflow[]>(content, _jsonOptions);
+
+                if (rulesEngineWorkflows != null && rulesEngineWorkflows.Length > 0)
+                {
+                    var workflow = WorkflowConverter.ConvertToWorkflowDefinition(rulesEngineWorkflows);
+                    _logger.LogInformation($"Retrieved workflow in Inventory.API format: {name}");
+                    return workflow;
+                }
+
+                // Fallback to our editor format
+                var workflowDefinition = JsonSerializer.Deserialize<WorkflowDefinition>(content, _jsonOptions);
+                if (workflowDefinition != null)
+                {
+                    _logger.LogInformation($"Retrieved workflow in editor format: {name}");
+                    return workflowDefinition;
+                }
+
+                throw new InvalidOperationException($"Could not parse workflow file: {name}");
             }
             catch (Exception ex)
             {
@@ -128,7 +158,10 @@ namespace RulesEngineEditor.Services.Storage
                 workflow.UpdatedAt = DateTime.UtcNow;
                 var filePath = GetWorkflowPath(workflow.Name);
 
-                var json = JsonSerializer.Serialize(workflow, _jsonOptions);
+                // Convert to Inventory.API format for compatibility
+                var rulesEngineWorkflows = WorkflowConverter.ConvertToRulesEngineWorkflows(workflow);
+                var json = JsonSerializer.Serialize(rulesEngineWorkflows, _jsonOptions);
+
                 await File.WriteAllTextAsync(filePath, json);
 
                 _logger.LogInformation($"Saved workflow: {workflow.Name}");

@@ -145,8 +145,10 @@ app.MapGet("/api", () => new
 .WithDescription("Get API information and available endpoints");
 
 // Serve UI at root
-app.MapGet("/", () => Results.File("wwwroot/index.html", "text/html"))
-    .WithName("GetUI");
+//app.MapGet("/", () => Results.File("wwwroot/index.html", "text/html"))
+//    .WithName("GetUI");
+
+app.MapGet("/", () => Results.Redirect("/index.html"));
 
 // ========== LOG STARTUP INFORMATION ==========
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
