@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Responsive Rules Engine Editor</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.2/ace.min.js"></script>
     <style>
         :root {
             --color-primary: #2196f3;
@@ -38,6 +39,13 @@
             }
         }
 
+        .json-editor {
+            border: 1px solid #e0e0e0;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background: white;
+        }
+
         .json-editor-input {
             font-family: 'Courier New', monospace;
             font-size: 12px;
@@ -53,20 +61,13 @@
             background: white;
             border-right: 1px solid #e0e0e0;
             overflow-y: auto;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 60px;
         }
 
         @media (max-width: 768px) {
             .sidebar {
                 width: 100%;
-                height: auto;
-                position: relative;
                 border-right: none;
                 border-bottom: 1px solid #e0e0e0;
-                top: 0;
             }
         }
 
@@ -267,24 +268,13 @@
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 1rem 1.5rem;
+            padding: 1.5rem;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
         }
 
         .header h1 {
             margin: 0;
-            font-size: 1.5rem;
-        }
-
-        .header p {
-            margin: 0.25rem 0 0 0;
-            opacity: 0.9;
-            font-size: 0.875rem;
+            font-size: 1.875rem;
         }
 
         .flex-row {
@@ -355,39 +345,18 @@
         .layout {
             display: grid;
             grid-template-columns: 280px 1fr;
-            margin-top: 60px;
-            min-height: calc(100vh - 60px);
+            min-height: 100vh;
         }
 
         @media (max-width: 768px) {
             .layout {
                 grid-template-columns: 1fr;
-                margin-top: 120px;
             }
         }
 
         .main-content {
-            padding: 2rem 1rem;
+            padding: 2rem;
             overflow-y: auto;
-        }
-
-        .api-status {
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .api-status.online {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-
-        .api-status.offline {
-            background: #ffcdd2;
-            color: #c62828;
         }
     </style>
 </head>
@@ -396,10 +365,9 @@
         <div class="flex-row" style="justify-content: space-between;">
             <div>
                 <h1>📋 Rules Engine Editor</h1>
-                <p>Create, edit, and manage Microsoft Rules Engine workflows</p>
+                <p style="margin: 0.5rem 0 0; opacity: 0.9;">Create, edit, and manage Microsoft Rules Engine workflows</p>
             </div>
             <div class="flex-row">
-                <div id="apiStatus" class="api-status offline">⚫ Checking...</div>
                 <select id="storageProvider" class="form-select" style="width: 150px;">
                     <option value="jsonfile">JSON File</option>
                     <option value="s3">AWS S3</option>
@@ -412,7 +380,7 @@
     <div class="layout">
         <div class="sidebar">
             <div style="padding: 1rem; border-bottom: 1px solid #e0e0e0;">
-                <h3 style="margin: 0 0 1rem 0; color: #333; font-size: 1rem;">Workflows</h3>
+                <h3 style="margin: 0 0 1rem 0; color: #333;">Workflows</h3>
                 <div class="flex-row">
                     <button class="btn btn-primary btn-sm" onclick="openNewWorkflowModal()">
                         ➕ New
@@ -435,7 +403,7 @@
             </div>
 
             <div id="editorContainer" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                     <h2 id="workflowName" style="margin: 0; color: #333;"></h2>
                     <div class="flex-row">
                         <button class="btn btn-success btn-sm" onclick="saveWorkflow()">
@@ -457,11 +425,6 @@
                         <div class="form-group">
                             <label class="form-label">Workflow Name</label>
                             <input type="text" id="workflowNameInput" class="form-input" placeholder="Enter workflow name">
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Description</label>
-                            <textarea id="workflowDescInput" class="form-textarea" style="min-height: 80px;" placeholder="Describe this workflow"></textarea>
                         </div>
 
                         <div class="form-group">
@@ -516,10 +479,6 @@
                 <label class="form-label">Success Event</label>
                 <input type="text" id="newRuleSuccess" class="form-input" placeholder="e.g., HighValueOrder">
             </div>
-            <div class="form-group">
-                <label class="form-label">Error Message (Optional)</label>
-                <input type="text" id="newRuleError" class="form-input" placeholder="e.g., Order amount is below minimum">
-            </div>
             <div class="flex-row" style="gap: 0.5rem; margin-top: 1.5rem;">
                 <button class="btn btn-primary" onclick="createNewRule()">Add Rule</button>
                 <button class="btn btn-outline" onclick="closeNewRuleModal()">Cancel</button>
@@ -528,64 +487,106 @@
     </div>
 
     <script>
-        // API Configuration
-        const API_BASE_URL = 'http://localhost:5000/api/rules';
-
         // Application State
         const app = {
             workflows: [],
             currentWorkflow: null,
-            currentProvider: 'jsonfile',
-            apiOnline: false
+            currentProvider: 'jsonfile'
         };
 
-        // API Functions
-        async function fetchFromApi(endpoint, method = 'GET', body = null) {
-            try {
-                const options = {
-                    method,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+        // Storage Provider Factory
+        const storageFactory = {
+            create(type) {
+                switch(type) {
+                    case 'jsonfile':
+                        return new JsonFileProvider();
+                    case 's3':
+                        return new S3Provider();
+                    case 'azureblob':
+                        return new AzureBlobProvider();
+                    default:
+                        return new JsonFileProvider();
+                }
+            }
+        };
+
+        // JSON File Provider
+        class JsonFileProvider {
+            async listWorkflows() {
+                // Simulated - would call backend
+                return [
+                    { name: 'OrderValidation', description: 'Validates order details' },
+                    { name: 'PaymentProcessing', description: 'Handles payment rules' }
+                ];
+            }
+
+            async getWorkflow(name) {
+                return {
+                    name: name,
+                    rules: [
+                        {
+                            name: 'CheckAmount',
+                            expression: 'input.Amount > 1000',
+                            successEvent: 'HighValue'
+                        }
+                    ]
                 };
+            }
 
-                if (body) {
-                    options.body = JSON.stringify(body);
-                }
+            async saveWorkflow(workflow) {
+                console.log('Saving to JSON File:', workflow);
+                return true;
+            }
 
-                const url = `${API_BASE_URL}${endpoint}?provider=${app.currentProvider}`;
-                const response = await fetch(url, options);
-
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
-                }
-
-                return await response.json();
-            } catch (error) {
-                console.error('API Error:', error);
-                throw error;
+            async deleteWorkflow(name) {
+                console.log('Deleting from JSON File:', name);
+                return true;
             }
         }
 
-        async function checkApiHealth() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/providers`);
-                app.apiOnline = response.ok;
-                updateApiStatus();
-            } catch (error) {
-                app.apiOnline = false;
-                updateApiStatus();
+        // AWS S3 Provider
+        class S3Provider {
+            async listWorkflows() {
+                console.log('Listing from S3');
+                return [];
+            }
+
+            async getWorkflow(name) {
+                console.log('Getting from S3:', name);
+                return { name, rules: [] };
+            }
+
+            async saveWorkflow(workflow) {
+                console.log('Saving to S3:', workflow);
+                return true;
+            }
+
+            async deleteWorkflow(name) {
+                console.log('Deleting from S3:', name);
+                return true;
             }
         }
 
-        function updateApiStatus() {
-            const statusDiv = document.getElementById('apiStatus');
-            if (app.apiOnline) {
-                statusDiv.textContent = '🟢 API Connected';
-                statusDiv.className = 'api-status online';
-            } else {
-                statusDiv.textContent = '🔴 API Offline';
-                statusDiv.className = 'api-status offline';
+        // Azure Blob Provider
+        class AzureBlobProvider {
+            async listWorkflows() {
+                console.log('Listing from Azure Blob');
+                return [];
+            }
+
+            async getWorkflow(name) {
+                console.log('Getting from Azure Blob:', name);
+                return { name, rules: [] };
+            }
+
+            async saveWorkflow(workflow) {
+                console.log('Saving to Azure Blob:', workflow);
+                return true;
+            }
+
+            async deleteWorkflow(name) {
+                console.log('Deleting from Azure Blob:', name);
+                return true;
             }
         }
 
@@ -613,8 +614,6 @@
 
         function closeNewWorkflowModal() {
             document.getElementById('newWorkflowModal').classList.remove('show');
-            document.getElementById('newWorkflowName').value = '';
-            document.getElementById('newWorkflowDesc').value = '';
         }
 
         function openNewRuleModal() {
@@ -623,10 +622,6 @@
 
         function closeNewRuleModal() {
             document.getElementById('newRuleModal').classList.remove('show');
-            document.getElementById('newRuleName').value = '';
-            document.getElementById('newRuleCondition').value = '';
-            document.getElementById('newRuleSuccess').value = '';
-            document.getElementById('newRuleError').value = '';
         }
 
         async function createNewWorkflow() {
@@ -638,33 +633,25 @@
                 return;
             }
 
-            try {
-                const response = await fetchFromApi('/workflows', 'POST', {
-                    name: name,
-                    description: desc || '',
-                    rules: []
-                });
+            const workflow = {
+                name: name,
+                description: desc || '',
+                rules: []
+            };
 
-                showAlert(`Workflow "${name}" created successfully`);
-                closeNewWorkflowModal();
-                loadWorkflows();
-            } catch (error) {
-                showAlert(`Error creating workflow: ${error.message}`, 'error');
-            }
+            const provider = storageFactory.create(app.currentProvider);
+            await provider.saveWorkflow(workflow);
+            showAlert(`Workflow "${name}" created successfully`);
+            closeNewWorkflowModal();
+            loadWorkflows();
+            document.getElementById('newWorkflowName').value = '';
+            document.getElementById('newWorkflowDesc').value = '';
         }
 
         async function loadWorkflows() {
-            try {
-                const response = await fetchFromApi('/workflows');
-                if (response.success) {
-                    app.workflows = response.data || [];
-                    renderWorkflowList();
-                } else {
-                    showAlert('Failed to load workflows: ' + response.message, 'error');
-                }
-            } catch (error) {
-                showAlert(`Error loading workflows: ${error.message}`, 'error');
-            }
+            const provider = storageFactory.create(app.currentProvider);
+            app.workflows = await provider.listWorkflows();
+            renderWorkflowList();
         }
 
         function renderWorkflowList() {
@@ -673,28 +660,15 @@
                 <div class="workflow-item ${app.currentWorkflow?.name === w.name ? 'active' : ''}" 
                      onclick="selectWorkflow('${w.name}')">
                     <div style="font-weight: 500;">${w.name}</div>
-                    <div style="font-size: 0.75rem; opacity: 0.7; margin-top: 0.25rem;">
-                        ${w.ruleCount} rule(s)
-                    </div>
-                    <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 0.25rem;">
-                        ${w.description || 'No description'}
-                    </div>
+                    <div style="font-size: 0.75rem; opacity: 0.7;">${w.description || 'No description'}</div>
                 </div>
             `).join('');
         }
 
         async function selectWorkflow(name) {
-            try {
-                const response = await fetchFromApi(`/workflows/${name}`);
-                if (response.success) {
-                    app.currentWorkflow = response.data;
-                    renderEditor();
-                } else {
-                    showAlert(`Error loading workflow: ${response.message}`, 'error');
-                }
-            } catch (error) {
-                showAlert(`Error loading workflow: ${error.message}`, 'error');
-            }
+            const provider = storageFactory.create(app.currentProvider);
+            app.currentWorkflow = await provider.getWorkflow(name);
+            renderEditor();
         }
 
         function renderEditor() {
@@ -702,7 +676,6 @@
             document.getElementById('editorContainer').style.display = 'block';
             document.getElementById('workflowName').textContent = app.currentWorkflow.name;
             document.getElementById('workflowNameInput').value = app.currentWorkflow.name;
-            document.getElementById('workflowDescInput').value = app.currentWorkflow.description || '';
             document.getElementById('jsonEditor').value = JSON.stringify(app.currentWorkflow, null, 2);
             renderRules();
         }
@@ -713,9 +686,7 @@
                 <div class="rule-item">
                     <div><strong>${rule.name}</strong></div>
                     <div style="font-size: 0.875rem; color: #666; margin: 0.5rem 0;">
-                        <div>Condition: ${rule.expression}</div>
-                        ${rule.successEvent ? `<div>Success: ${rule.successEvent}</div>` : ''}
-                        ${rule.errorMessage ? `<div>Error: ${rule.errorMessage}</div>` : ''}
+                        Condition: ${rule.expression}
                     </div>
                     <button class="btn btn-error btn-sm" onclick="deleteRule(${idx})">Remove</button>
                 </div>
@@ -730,7 +701,6 @@
             const name = document.getElementById('newRuleName').value;
             const condition = document.getElementById('newRuleCondition').value;
             const success = document.getElementById('newRuleSuccess').value;
-            const error = document.getElementById('newRuleError').value;
 
             if (!name || !condition) {
                 showAlert('Rule name and condition are required', 'error');
@@ -740,68 +710,43 @@
             app.currentWorkflow.rules.push({
                 name: name,
                 expression: condition,
-                successEvent: success,
-                errorMessage: error,
-                ruleExpressionType: 'LambdaExpression',
-                enabled: true
+                successEvent: success
             });
 
             renderRules();
             document.getElementById('jsonEditor').value = JSON.stringify(app.currentWorkflow, null, 2);
             closeNewRuleModal();
+            document.getElementById('newRuleName').value = '';
+            document.getElementById('newRuleCondition').value = '';
+            document.getElementById('newRuleSuccess').value = '';
         }
 
         function deleteRule(index) {
-            if (confirm('Are you sure you want to delete this rule?')) {
-                app.currentWorkflow.rules.splice(index, 1);
-                renderRules();
-                document.getElementById('jsonEditor').value = JSON.stringify(app.currentWorkflow, null, 2);
-            }
+            app.currentWorkflow.rules.splice(index, 1);
+            renderRules();
+            document.getElementById('jsonEditor').value = JSON.stringify(app.currentWorkflow, null, 2);
         }
 
         async function saveWorkflow() {
-            try {
-                const updated = {
-                    name: document.getElementById('workflowNameInput').value,
-                    description: document.getElementById('workflowDescInput').value,
-                    rules: app.currentWorkflow.rules
-                };
-
-                if (!updated.name) {
-                    showAlert('Workflow name is required', 'error');
-                    return;
-                }
-
-                const response = await fetchFromApi('/workflows', 'POST', updated);
-                if (response.success) {
-                    app.currentWorkflow = response.data;
-                    showAlert('Workflow saved successfully');
-                    loadWorkflows();
-                } else {
-                    showAlert(`Error saving workflow: ${response.message}`, 'error');
-                }
-            } catch (error) {
-                showAlert(`Error saving workflow: ${error.message}`, 'error');
-            }
+            const provider = storageFactory.create(app.currentProvider);
+            const updated = {
+                ...app.currentWorkflow,
+                name: document.getElementById('workflowNameInput').value
+            };
+            await provider.saveWorkflow(updated);
+            app.currentWorkflow = updated;
+            showAlert('Workflow saved successfully');
         }
 
         async function deleteWorkflow() {
             if (!confirm(`Are you sure you want to delete "${app.currentWorkflow.name}"?`)) return;
-            
-            try {
-                const response = await fetchFromApi(`/workflows/${app.currentWorkflow.name}`, 'DELETE');
-                if (response.success) {
-                    showAlert('Workflow deleted successfully');
-                    app.currentWorkflow = null;
-                    document.getElementById('emptyState').style.display = 'block';
-                    document.getElementById('editorContainer').style.display = 'none';
-                    loadWorkflows();
-                } else {
-                    showAlert(`Error deleting workflow: ${response.message}`, 'error');
-                }
-            } catch (error) {
-                showAlert(`Error deleting workflow: ${error.message}`, 'error');
-            }
+            const provider = storageFactory.create(app.currentProvider);
+            await provider.deleteWorkflow(app.currentWorkflow.name);
+            showAlert('Workflow deleted successfully');
+            app.currentWorkflow = null;
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('editorContainer').style.display = 'none';
+            loadWorkflows();
         }
 
         // Event Listeners
@@ -811,9 +756,7 @@
         });
 
         // Initialize
-        checkApiHealth();
         loadWorkflows();
-        setInterval(checkApiHealth, 30000); // Check API every 30 seconds
     </script>
 </body>
 </html>
